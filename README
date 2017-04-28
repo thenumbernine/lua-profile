@@ -1,7 +1,7 @@
 Lua profiler
 uses my lua parser
 
-usage: luajit -lprofile script.lua
+usage: luajit -lprofile -lscript-to-run
 
 operates by
 first overriding the require function
