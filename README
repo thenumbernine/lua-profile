@@ -1,0 +1,8 @@
+Lua profiler
+uses my lua parser
+
+operates by
+first overriding the require function
+next, for lua files, parses them, 
+inserts profiling calls into beginning of blocks
+and recompiles
