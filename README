@@ -8,3 +8,6 @@ first overriding the require function
 next, for lua files, parses them, 
 inserts profiling calls into beginning of blocks
 and recompiles
+
+still TODO:
+associate ast tokens with line/col, so anonymous functions can be traced back to their origin

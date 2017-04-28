@@ -93,7 +93,6 @@ function require(m, ...)
 						if type(v) == 'table' then
 							if v.type == 'function' then
 								uid = uid + 1
-								print('inserting profiling call', uid)
 								table.insert(v, 1, ast._call(
 									ast._var(cbname),
 									ast._string(tostring(v.name or '<anon>')),
