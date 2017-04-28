@@ -1,7 +1,7 @@
 -- not sure what I want this to do ...
 local Parser = require 'parser'
-local showcode = require 'template.showcode'
-
+--local showcode = require 'template.showcode'
+local totalLines = 0
 local oldrequire = require
 function require(m, ...)
 	local result = package.loaded[m]
@@ -23,7 +23,8 @@ function require(m, ...)
 			if str then
 				-- here i'm going to insert a profiling call into each function
 print('parsing filename',fn)
-print(showcode(str))
+--print(showcode(str))
+				totalLines = totalLines + #str:gsub('\n+','\n'):gsub('[^\n]','') + 1
 				local parser
 				local result, tree = xpcall(function()
 					parser = Parser()
@@ -51,8 +52,8 @@ print(showcode(str))
 				rmap(tree)
 
 				str = tostring(tree)
-print('parsed code:')
-print(showcode(str))
+--print('parsed code:\n'..showcode(str))
+print('total lines parsed:',totalLines)				
 				result = assert(load(str))()
 				package.loaded[m] = result
 				return result

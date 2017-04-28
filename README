@@ -1,6 +1,8 @@
 Lua profiler
 uses my lua parser
 
+usage: luajit -lprofile script.lua
+
 operates by
 first overriding the require function
 next, for lua files, parses them, 
