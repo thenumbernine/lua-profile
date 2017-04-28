@@ -11,9 +11,15 @@ local lastTime = os.clock()
 
 _G[donename] = function()
 	if not funcs then return end
+	
+	local s = {}
 	for uid,f in pairs(funcs) do
-		local f = assert(funcs[uid])
-		print(f.name..' '..uid)
+		table.insert(s, f)
+	end
+	table.sort(s, function(a,b) return a.total < b.total end)
+
+	for _,f in ipairs(s) do
+		print(f.name..' '..f.uid)
 		print('\tmin',f.min..'s')
 		print('\tmax',f.max..'s')
 		print('\tavg',f.avg..'s')
@@ -21,6 +27,7 @@ _G[donename] = function()
 		print('\ttotal',f.total..'s')
 		print('\tcount',f.count)
 	end
+	
 	funcs = nil
 end
 
@@ -29,6 +36,7 @@ _G[cbname] = function(name, uid)
 	local f = funcs[uid]
 	if not f then
 		f = {
+			uid = uid,
 			name = name,
 			min = math.huge,
 			max = -math.huge,
@@ -46,6 +54,7 @@ _G[cbname] = function(name, uid)
 		f.count = f.count + 1
 		f.avg = f.avg + (dt - f.avg) / f.count
 		f.sqavg = f.sqavg + (dt*dt - f.sqavg) / f.count
+		f.total = f.total + dt
 	end
 	lastTime = os.clock()
 end
