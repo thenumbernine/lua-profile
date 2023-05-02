@@ -65,7 +65,9 @@ require'parser.require'.callbacks:insert(function(tree)
 	-- preferrably with its own id baked into it, so no id computation based on line #s is necessary
 	local function addcbs(x)
 		for k,v in pairs(x) do
-			if type(v) == 'table' then
+			if type(v) == 'table'
+			and k ~= 'parent'	-- TODO need a list of child keys
+			then
 				if v.type == 'function' then
 					uid = uid + 1
 					table.insert(v, 1, ast._call(
