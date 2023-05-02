@@ -1,16 +1,15 @@
 -- not sure what I want this to do ...
+local template = require 'template'
+local parser = require 'parser'
+local ast = require 'parser.ast'
 
 local funcs = {}
-local cbname = '_profilerCallback'
-local donename = '_profilerDone'
+
 local lastTime = os.clock()
 
--- instead of globals, these can go in 'profile.storage' or somewhere
--- then require() them into the function
--- or into file scope
-_G[donename] = function()
+local function profileSummary()
 	if not funcs then return end
-	
+
 	local s = {}
 	for uid,f in pairs(funcs) do
 		table.insert(s, f)
@@ -26,11 +25,13 @@ _G[donename] = function()
 		print('\ttotal',f.total..'s')
 		print('\tcount',f.count)
 	end
-	
+
 	funcs = nil
 end
+-- what to call it in the local of each file
+local profileSummaryName = '__profileSummary__'
 
-_G[cbname] = function(name, uid)
+local function profileCallback(name, uid)
 	local thisTime = os.clock()
 	local f = funcs[uid]
 	if not f then
@@ -57,11 +58,29 @@ _G[cbname] = function(name, uid)
 	end
 	lastTime = os.clock()
 end
+local profileCallbackName = '__profileCallback__'
 
+local profileAPI = {
+	profileSummary = profileSummary,
+	profileCallback = profileCallback,
+}
+local profileAPIName = '__profilerAPI__'
+
+local headerExprs = parser.parse(template([[
+local <?=profileAPIName?> = require 'profile'
+local <?=profileSummaryName?> = <?=profileAPIName?>.profileSummary
+local <?=profileCallbackName?> = <?=profileAPIName?>.profileCallback
+]], {
+	profileAPIName = profileAPIName,
+	profileSummaryName = profileSummaryName,
+	profileCallbackName = profileCallbackName,
+}))
+
+-- uniquely identify each function
 local uid = 0
-local firstReq
 
-local ast = require 'parser.ast'
+-- used to flag the first required file and insert a printout of the summary afterwards
+local firstReq
 
 require'parser.require'.callbacks:insert(function(tree)
 	-- right here we should insert our profiler
@@ -74,7 +93,7 @@ require'parser.require'.callbacks:insert(function(tree)
 				if v.type == 'function' then
 					uid = uid + 1
 					table.insert(v, 1, ast._call(
-						ast._var(cbname),
+						ast._var(profileCallbackName),
 						ast._string(tostring(v.name or '<anon>')),
 						ast._number(uid)
 					))
@@ -85,8 +104,33 @@ require'parser.require'.callbacks:insert(function(tree)
 		end
 	end
 	addcbs(tree)
+
+	for i=#headerExprs,1,-1 do
+		table.insert(tree, 1, headerExprs[i])
+	end
+
+	-- [[ option #1: insert the summary at the end of the first require()
+	-- only works with the convention of calling lua -lprofile -lscript-to-profile
+	-- the downside of this is it ends with a lua console (unless you add -e "" at the end)
 	if not firstReq then
 		firstReq = true
-		table.insert(tree, ast._call(ast._var(donename)))
+		table.insert(tree, ast._call(ast._var(profileSummaryName)))
 	end
+	--]]
 end)
+
+--[[ option #2: insert the summary as a gc of this.
+-- it so long as you return it and it embeds in the package.loaded,
+-- it won't get called until the shutdown
+-- downside is that if you don't add the -e , and remain in interpreter mode, it won't show the summary
+-- and calling os.exit() from interpreter bypasses all lua table __gc's
+-- i.e. the -e "" is essential
+return setmetatable({}, {__gc=function()
+	profileSummary()
+end})
+--]]
+
+return {
+	profileSummary = profileSummary,
+	profileCallback = profileCallback,
+}
