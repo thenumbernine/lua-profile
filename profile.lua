@@ -17,7 +17,11 @@ local function profileSummary()
 	table.sort(s, function(a,b) return a.total < b.total end)
 
 	for _,f in ipairs(s) do
-		print(f.name..' '..f.uid)
+		print(f.name
+			..' id#'..f.uid
+			..' '..tostring(f.source)
+			..':'..tostring(f.line)
+			..':'..tostring(f.col))
 		print('\tmin',f.min..'s')
 		print('\tmax',f.max..'s')
 		print('\tavg',f.avg..'s')
@@ -31,7 +35,7 @@ end
 -- what to call it in the local of each file
 local profileSummaryName = '__profileSummary__'
 
-local function profileCallback(name, uid)
+local function profileCallback(name, uid, source, line, col)
 	local thisTime = os.clock()
 	local f = funcs[uid]
 	if not f then
@@ -44,6 +48,9 @@ local function profileCallback(name, uid)
 			sqavg = 0,
 			total = 0,
 			count = 0,
+			source = source,
+			line = line,
+			col = col,
 		}
 		funcs[uid] = f
 	end
@@ -95,7 +102,10 @@ require'parser.require'.callbacks:insert(function(tree)
 					table.insert(v, 1, ast._call(
 						ast._var(profileCallbackName),
 						ast._string(tostring(v.name or '<anon>')),
-						ast._number(uid)
+						ast._number(uid),
+						ast._string(v.source),
+						ast._number(v.line),
+						ast._number(v.col)
 					))
 					-- insert profile call here
 				end
