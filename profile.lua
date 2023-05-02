@@ -5,6 +5,9 @@ local cbname = '_profilerCallback'
 local donename = '_profilerDone'
 local lastTime = os.clock()
 
+-- instead of globals, these can go in 'profile.storage' or somewhere
+-- then require() them into the function
+-- or into file scope
 _G[donename] = function()
 	if not funcs then return end
 	
