@@ -92,8 +92,7 @@ local uid = 0
 local firstReq
 
 local ast = LuaParser.ast
---require'parser.load_xform':insert(function(tree)
-require'parser.require'.callbacks:insert(function(tree)
+require'parser.load_xform':insert(function(tree)
 	-- right here we should insert our profiler
 	-- preferrably with its own id baked into it, so no id computation based on line #s is necessary
 	local function addcbs(x)
