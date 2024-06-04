@@ -1,7 +1,6 @@
 -- not sure what I want this to do ...
 local template = require 'template'
 local LuaParser = require 'parser.lua.parser'
-local ast = require 'parser.lua.ast'
 
 local funcs = {}
 
@@ -36,6 +35,9 @@ end
 local profileSummaryName = '__profileSummary__'
 
 local function profileCallback(name, uid, source, line, col)
+	-- profile callback hit after we've reported the summary ...
+	if not funcs then return end
+
 	local thisTime = os.clock()
 	local f = funcs[uid]
 	if not f then
@@ -89,7 +91,9 @@ local uid = 0
 -- used to flag the first required file and insert a printout of the summary afterwards
 local firstReq
 
-require'parser.load_xform':insert(function(tree)
+local ast = LuaParser.ast
+--require'parser.load_xform':insert(function(tree)
+require'parser.require'.callbacks:insert(function(tree)
 	-- right here we should insert our profiler
 	-- preferrably with its own id baked into it, so no id computation based on line #s is necessary
 	local function addcbs(x)
@@ -99,6 +103,7 @@ require'parser.load_xform':insert(function(tree)
 			then
 				if v.type == 'function' then
 					uid = uid + 1
+					-- insert profile call here
 					table.insert(v, 1, ast._call(
 						ast._var(profileCallbackName),
 						ast._string(tostring(v.name or '<anon>')),
@@ -107,7 +112,6 @@ require'parser.load_xform':insert(function(tree)
 						ast._number(v.line),
 						ast._number(v.col)
 					))
-					-- insert profile call here
 				end
 				addcbs(v)
 			end
@@ -124,7 +128,31 @@ require'parser.load_xform':insert(function(tree)
 	-- the downside of this is it ends with a lua console (unless you add -e "" at the end)
 	if not firstReq then
 		firstReq = true
-		table.insert(tree, ast._call(ast._var(profileSummaryName)))
+		local laststmt = tree[#tree]
+		if ast._return:isa(laststmt) then
+			-- if there's a return at the end ...
+			-- then we need to execute this after evaluating the return expression but before returning the value ...
+			tree[#tree] = ast._return(
+				ast._call(
+					ast._par(
+						ast._function(
+							nil,
+							{},
+							ast._local{
+								ast._assign(
+									{ast._var'tmp'},
+									laststmt.exprs
+								)
+							},
+							ast._call(ast._var(profileSummaryName)),
+							ast._return(ast._var'tmp')
+						)
+					)
+				)
+			)
+		else
+			table.insert(tree, ast._call(ast._var(profileSummaryName)))
+		end
 	end
 	--]]
 end)
