@@ -1,7 +1,7 @@
 -- not sure what I want this to do ...
 local template = require 'template'
-local parser = require 'parser'
-local ast = require 'parser.ast'
+local LuaParser = require 'parser.lua.parser'
+local ast = require 'parser.lua.ast'
 
 local funcs = {}
 
@@ -73,7 +73,7 @@ local profileAPI = {
 }
 local profileAPIName = '__profilerAPI__'
 
-local headerExprs = parser.parse(template([[
+local headerExprs = LuaParser.parse(template([[
 local <?=profileAPIName?> = require 'profile'
 local <?=profileSummaryName?> = <?=profileAPIName?>.profileSummary
 local <?=profileCallbackName?> = <?=profileAPIName?>.profileCallback
@@ -89,7 +89,7 @@ local uid = 0
 -- used to flag the first required file and insert a printout of the summary afterwards
 local firstReq
 
-require'parser.require'.callbacks:insert(function(tree)
+require'parser.load_xform':insert(function(tree)
 	-- right here we should insert our profiler
 	-- preferrably with its own id baked into it, so no id computation based on line #s is necessary
 	local function addcbs(x)
