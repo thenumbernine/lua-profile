@@ -99,6 +99,7 @@ require'parser.load_xform':insert(function(tree)
 		for k,v in pairs(x) do
 			if type(v) == 'table'
 			and k ~= 'parent'	-- TODO need a list of child keys
+			and k ~= 'parser'
 			then
 				if v.type == 'function' then
 					uid = uid + 1
