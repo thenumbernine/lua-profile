@@ -92,7 +92,7 @@ local uid = 0
 local firstReq
 
 local ast = LuaParser.ast
-require'parser.load_xform':insert(function(tree)
+require'parser.load_xform':insert(function(tree, source)
 	-- right here we should insert our profiler
 	-- preferrably with its own id baked into it, so no id computation based on line #s is necessary
 	local function addcbs(x)
@@ -103,14 +103,16 @@ require'parser.load_xform':insert(function(tree)
 			then
 				if v.type == 'function' then
 					uid = uid + 1
+					local loc = v.span.from
+--DEBUG:print('inserting profile at', v.span.from.source, v.span.from.line, v.span.from.col)
 					-- insert profile call here
 					table.insert(v, 1, ast._call(
 						ast._var(profileCallbackName),
 						ast._string(tostring(v.name or '<anon>')),
 						ast._number(uid),
-						ast._string(v.source),
-						ast._number(v.line),
-						ast._number(v.col)
+						ast._string(source), --loc.source),
+						ast._number(loc.line),
+						ast._number(loc.col)
 					))
 				end
 				addcbs(v)
